@@ -123,8 +123,13 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [queryClient]);
 
   const validateDeal = useCallback(async (dealId: string) => {
-    const deal = deals.find(d => d.id === dealId);
-    if (!deal) return;
+    // Fetch deal directly from DB to avoid stale cache issues
+    let deal = deals.find(d => d.id === dealId);
+    if (!deal) {
+      const { data } = await supabase.from("deals").select("*").eq("id", dealId).single();
+      if (!data) return;
+      deal = data as DbDeal;
+    }
 
     const result = simulateValidation(deal);
     const now = new Date().toISOString();
