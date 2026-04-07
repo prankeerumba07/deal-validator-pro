@@ -14,7 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          deal_id: string
+          description: string
+          id: string
+          is_resolved: boolean
+          priority: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          deal_id: string
+          description: string
+          id?: string
+          is_resolved?: boolean
+          priority?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          deal_id?: string
+          description?: string
+          id?: string
+          is_resolved?: boolean
+          priority?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          deal_name: string
+          expected_cashback: number
+          expected_freebie: string | null
+          expected_price: number
+          expiry_date: string | null
+          id: string
+          last_checked_at: string | null
+          partner_site: string
+          product_url: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          deal_name?: string
+          expected_cashback?: number
+          expected_freebie?: string | null
+          expected_price: number
+          expiry_date?: string | null
+          id?: string
+          last_checked_at?: string | null
+          partner_site: string
+          product_url: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          deal_name?: string
+          expected_cashback?: number
+          expected_freebie?: string | null
+          expected_price?: number
+          expiry_date?: string | null
+          id?: string
+          last_checked_at?: string | null
+          partner_site?: string
+          product_url?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          coupon_validation_enabled: boolean
+          email_alerts_enabled: boolean
+          id: string
+          price_tolerance: number
+          retry_attempts: number
+          slack_alerts_enabled: boolean
+          updated_at: string
+          validation_frequency: string
+        }
+        Insert: {
+          coupon_validation_enabled?: boolean
+          email_alerts_enabled?: boolean
+          id?: string
+          price_tolerance?: number
+          retry_attempts?: number
+          slack_alerts_enabled?: boolean
+          updated_at?: string
+          validation_frequency?: string
+        }
+        Update: {
+          coupon_validation_enabled?: boolean
+          email_alerts_enabled?: boolean
+          id?: string
+          price_tolerance?: number
+          retry_attempts?: number
+          slack_alerts_enabled?: boolean
+          updated_at?: string
+          validation_frequency?: string
+        }
+        Relationships: []
+      }
+      validation_logs: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          message: string | null
+          run_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          message?: string | null
+          run_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          message?: string | null
+          run_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validation_logs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      validation_results: {
+        Row: {
+          actual_price: number | null
+          checked_at: string
+          coupon_status: string
+          deal_id: string
+          final_status: string
+          freebie_status: string
+          id: string
+          reason: Json | null
+          screenshot_url: string | null
+          stock_status: string
+        }
+        Insert: {
+          actual_price?: number | null
+          checked_at?: string
+          coupon_status?: string
+          deal_id: string
+          final_status?: string
+          freebie_status?: string
+          id?: string
+          reason?: Json | null
+          screenshot_url?: string | null
+          stock_status?: string
+        }
+        Update: {
+          actual_price?: number | null
+          checked_at?: string
+          coupon_status?: string
+          deal_id?: string
+          final_status?: string
+          freebie_status?: string
+          id?: string
+          reason?: Json | null
+          screenshot_url?: string | null
+          stock_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validation_results_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
