@@ -11,11 +11,11 @@ const Alerts = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterSite, setFilterSite] = useState("all");
 
-  const getDealSite = (dealId: string) => deals.find(d => d.id === dealId)?.partnerSite || "";
+  const getDealSite = (dealId: string) => deals.find(d => d.id === dealId)?.partner_site || "";
 
   const filtered = useMemo(() => alerts.filter(a => {
     if (filterPriority !== "all" && a.priority !== filterPriority) return false;
-    if (filterSite !== "all" && getDealSite(a.dealId) !== filterSite) return false;
+    if (filterSite !== "all" && getDealSite(a.deal_id) !== filterSite) return false;
     return true;
   }), [alerts, filterPriority, filterSite]);
 
@@ -27,9 +27,9 @@ const Alerts = () => {
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Priority" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Low">Low</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterSite} onValueChange={setFilterSite}>
@@ -56,13 +56,13 @@ const Alerts = () => {
             {filtered.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No alerts</TableCell></TableRow>
             ) : filtered.map(a => (
-              <TableRow key={a.id} className={a.resolved ? "opacity-50" : ""}>
-                <TableCell className="font-medium">{a.dealId}</TableCell>
-                <TableCell>{a.issueType}</TableCell>
+              <TableRow key={a.id} className={a.is_resolved ? "opacity-50" : ""}>
+                <TableCell className="font-medium">{a.deal_id.slice(0, 8)}</TableCell>
+                <TableCell>{a.alert_type}</TableCell>
                 <TableCell className="max-w-[250px] truncate text-sm">{a.description}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{format(new Date(a.timeDetected), "dd MMM, HH:mm")}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{format(new Date(a.created_at), "dd MMM, HH:mm")}</TableCell>
                 <TableCell><PriorityBadge priority={a.priority} /></TableCell>
-                <TableCell><Switch checked={a.resolved} onCheckedChange={() => toggleAlertResolved(a.id)} /></TableCell>
+                <TableCell><Switch checked={a.is_resolved} onCheckedChange={() => toggleAlertResolved(a.id, a.is_resolved)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>

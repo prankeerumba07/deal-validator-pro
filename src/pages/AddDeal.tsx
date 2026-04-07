@@ -34,16 +34,24 @@ const AddDeal = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSave = (andValidate = false) => {
+  const handleSave = async (andValidate = false) => {
     if (!validate()) return;
-    const deal = addDeal({
-      partnerSite, productUrl, expectedPrice: Number(expectedPrice),
-      couponCode, cashbackPercent: Number(cashbackPercent) || 0,
-      expectedFreebie, expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : "",
-    });
-    if (andValidate) validateDeal(deal.id);
-    toast.success(`Deal ${deal.id} saved${andValidate ? " & validated" : ""}`);
-    navigate("/");
+    try {
+      const deal = await addDeal({
+        partner_site: partnerSite,
+        product_url: productUrl,
+        expected_price: Number(expectedPrice),
+        coupon_code: couponCode || null,
+        expected_cashback: Number(cashbackPercent) || 0,
+        expected_freebie: expectedFreebie || null,
+        expiry_date: expiryDate ? format(expiryDate, "yyyy-MM-dd") : null,
+      });
+      if (andValidate) await validateDeal(deal.id);
+      toast.success(`Deal saved${andValidate ? " & validated" : ""}`);
+      navigate("/");
+    } catch (err) {
+      toast.error("Failed to save deal");
+    }
   };
 
   return (
