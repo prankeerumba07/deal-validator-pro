@@ -1,72 +1,26 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { Deal, ValidationLog, Alert, Settings, ValidationResult, DealStatus } from "@/types/deal";
+import React, { createContext, useContext, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { DbDeal, DbValidationResult, DbValidationLog, DbAlert, DbSettings } from "@/types/deal";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 const PARTNER_SITES = ["Amazon", "Flipkart", "Myntra", "Ajio", "Meesho"];
 
-const mockDeals: Deal[] = [
-  {
-    id: "DEAL-001", partnerSite: "Amazon", productUrl: "https://amazon.in/dp/B09XYZ123",
-    expectedPrice: 1499, couponCode: "FLASH20", cashbackPercent: 10, expectedFreebie: "Screen Guard",
-    expiryDate: "2026-04-15", status: "Valid", lastCheckedTime: "2026-04-07T10:30:00",
-    validationResult: { actualPrice: 1499, couponStatus: "Working", freebieStatus: "Available", stockStatus: "In Stock", finalResult: "Valid", reasons: [] },
-    screenshotUrl: null,
-  },
-  {
-    id: "DEAL-002", partnerSite: "Flipkart", productUrl: "https://flipkart.com/item/ABC456",
-    expectedPrice: 899, couponCode: "SAVE15", cashbackPercent: 5, expectedFreebie: "",
-    expiryDate: "2026-04-10", status: "Invalid", lastCheckedTime: "2026-04-07T09:15:00",
-    validationResult: { actualPrice: 1099, couponStatus: "Failed", freebieStatus: "Not Available", stockStatus: "In Stock", finalResult: "Invalid", reasons: ["Price mismatch: ₹1099 vs ₹899", "Coupon SAVE15 not applicable"] },
-    screenshotUrl: null,
-  },
-  {
-    id: "DEAL-003", partnerSite: "Myntra", productUrl: "https://myntra.com/product/789",
-    expectedPrice: 2499, couponCode: "", cashbackPercent: 8, expectedFreebie: "",
-    expiryDate: "2026-04-20", status: "Pending", lastCheckedTime: null,
-    validationResult: null, screenshotUrl: null,
-  },
-  {
-    id: "DEAL-004", partnerSite: "Amazon", productUrl: "https://amazon.in/dp/B09QWE456",
-    expectedPrice: 3999, couponCode: "MEGA30", cashbackPercent: 12, expectedFreebie: "Carry Case",
-    expiryDate: "2026-04-12", status: "Valid", lastCheckedTime: "2026-04-06T14:00:00",
-    validationResult: { actualPrice: 3999, couponStatus: "Working", freebieStatus: "Available", stockStatus: "In Stock", finalResult: "Valid", reasons: [] },
-    screenshotUrl: null,
-  },
-  {
-    id: "DEAL-005", partnerSite: "Ajio", productUrl: "https://ajio.com/p/12345",
-    expectedPrice: 599, couponCode: "NEW10", cashbackPercent: 3, expectedFreebie: "",
-    expiryDate: "2026-04-08", status: "Pending", lastCheckedTime: null,
-    validationResult: null, screenshotUrl: null,
-  },
-];
-
-const mockLogs: ValidationLog[] = [
-  { id: "LOG-001", dealId: "DEAL-001", dateTime: "2026-04-07T10:30:00", actualPrice: 1499, couponStatus: "Working", result: "Valid", reasonSummary: "All checks passed" },
-  { id: "LOG-002", dealId: "DEAL-002", dateTime: "2026-04-07T09:15:00", actualPrice: 1099, couponStatus: "Failed", result: "Invalid", reasonSummary: "Price mismatch, Coupon failed" },
-  { id: "LOG-003", dealId: "DEAL-001", dateTime: "2026-04-06T10:30:00", actualPrice: 1499, couponStatus: "Working", result: "Valid", reasonSummary: "All checks passed" },
-];
-
-const mockAlerts: Alert[] = [
-  { id: "ALT-001", dealId: "DEAL-002", issueType: "Price Mismatch", description: "Expected ₹899 but found ₹1099", timeDetected: "2026-04-07T09:15:00", priority: "High", resolved: false },
-  { id: "ALT-002", dealId: "DEAL-002", issueType: "Coupon Failed", description: "Coupon SAVE15 is not applicable on this product", timeDetected: "2026-04-07T09:15:00", priority: "Medium", resolved: false },
-];
-
-const defaultSettings: Settings = {
-  priceTolerance: 50, validationFrequency: "30 min", retryAttempts: 3,
-  enableCouponValidation: true, emailAlerts: true, slackAlerts: false,
-};
-
 interface DealContextType {
-  deals: Deal[];
-  logs: ValidationLog[];
-  alerts: Alert[];
-  settings: Settings;
+  deals: DbDeal[];
+  logs: DbValidationLog[];
+  alerts: DbAlert[];
+  settings: DbSettings | null;
   partnerSites: string[];
-  addDeal: (deal: Omit<Deal, "id" | "status" | "lastCheckedTime" | "validationResult" | "screenshotUrl">) => Deal;
-  validateDeal: (dealId: string) => void;
-  validateAllDeals: () => void;
-  toggleAlertResolved: (alertId: string) => void;
-  updateSettings: (s: Settings) => void;
-  getDeal: (id: string) => Deal | undefined;
+  isLoading: boolean;
+  addDeal: (deal: TablesInsert<"deals">) => Promise<DbDeal>;
+  validateDeal: (dealId: string) => Promise<void>;
+  validateAllDeals: () => Promise<void>;
+  toggleAlertResolved: (alertId: string, current: boolean) => Promise<void>;
+  updateSettings: (s: Partial<TablesInsert<"settings">>) => Promise<void>;
+  getDeal: (id: string) => DbDeal | undefined;
+  getLatestValidation: (dealId: string) => DbValidationResult | undefined;
+  validationResults: DbValidationResult[];
 }
 
 const DealContext = createContext<DealContextType | null>(null);
@@ -77,66 +31,161 @@ export const useDealContext = () => {
   return ctx;
 };
 
-function simulateValidation(deal: Deal): ValidationResult {
+function simulateValidation(deal: DbDeal): Omit<TablesInsert<"validation_results">, "deal_id"> {
   const rand = Math.random();
   if (rand > 0.4) {
-    return { actualPrice: deal.expectedPrice, couponStatus: deal.couponCode ? "Working" : "Not Applied", freebieStatus: deal.expectedFreebie ? "Available" : "Not Available", stockStatus: "In Stock", finalResult: "Valid", reasons: [] };
+    return {
+      actual_price: deal.expected_price,
+      coupon_status: deal.coupon_code ? "working" : "not_applied",
+      freebie_status: deal.expected_freebie ? "available" : "not_available",
+      stock_status: "in_stock",
+      final_status: "valid",
+      reason: [],
+    };
   }
   const reasons: string[] = [];
   const priceDiff = Math.floor(Math.random() * 500) + 100;
-  const actualPrice = deal.expectedPrice + priceDiff;
-  reasons.push(`Price mismatch: ₹${actualPrice} vs ₹${deal.expectedPrice}`);
-  const couponStatus = deal.couponCode ? "Failed" as const : "Not Applied" as const;
-  if (couponStatus === "Failed") reasons.push(`Coupon ${deal.couponCode} not applicable`);
-  const freebieStatus = deal.expectedFreebie ? "Not Available" as const : "Not Available" as const;
-  if (deal.expectedFreebie) reasons.push(`Freebie "${deal.expectedFreebie}" not available`);
-  return { actualPrice, couponStatus, freebieStatus, stockStatus: rand > 0.2 ? "In Stock" : "Out of Stock", finalResult: "Invalid", reasons };
+  const actualPrice = deal.expected_price + priceDiff;
+  reasons.push(`Price mismatch: ₹${actualPrice} vs ₹${deal.expected_price}`);
+  const couponStatus = deal.coupon_code ? "failed" : "not_applied";
+  if (couponStatus === "failed") reasons.push(`Coupon ${deal.coupon_code} not applicable`);
+  if (deal.expected_freebie) reasons.push(`Freebie "${deal.expected_freebie}" not available`);
+  return {
+    actual_price: actualPrice,
+    coupon_status: couponStatus,
+    freebie_status: deal.expected_freebie ? "not_available" : "not_available",
+    stock_status: rand > 0.2 ? "in_stock" : "out_of_stock",
+    final_status: "invalid",
+    reason: reasons,
+  };
 }
 
 export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [deals, setDeals] = useState<Deal[]>(mockDeals);
-  const [logs, setLogs] = useState<ValidationLog[]>(mockLogs);
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [nextId, setNextId] = useState(6);
+  const queryClient = useQueryClient();
 
-  const addDeal = useCallback((data: Omit<Deal, "id" | "status" | "lastCheckedTime" | "validationResult" | "screenshotUrl">) => {
-    const deal: Deal = { ...data, id: `DEAL-${String(nextId).padStart(3, "0")}`, status: "Pending", lastCheckedTime: null, validationResult: null, screenshotUrl: null };
-    setDeals(prev => [...prev, deal]);
-    setNextId(n => n + 1);
-    return deal;
-  }, [nextId]);
+  const { data: deals = [], isLoading: dealsLoading } = useQuery({
+    queryKey: ["deals"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("deals").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as DbDeal[];
+    },
+  });
 
-  const validateDeal = useCallback((dealId: string) => {
-    setDeals(prev => prev.map(d => {
-      if (d.id !== dealId) return d;
-      const result = simulateValidation(d);
-      const now = new Date().toISOString();
-      const log: ValidationLog = { id: `LOG-${Date.now()}`, dealId, dateTime: now, actualPrice: result.actualPrice, couponStatus: result.couponStatus, result: result.finalResult, reasonSummary: result.reasons.length ? result.reasons.join(", ") : "All checks passed" };
-      setLogs(prev => [log, ...prev]);
-      if (result.finalResult === "Invalid") {
-        const newAlerts: Alert[] = result.reasons.map((r, i) => ({
-          id: `ALT-${Date.now()}-${i}`, dealId, issueType: r.includes("Price") ? "Price Mismatch" as const : r.includes("Coupon") ? "Coupon Failed" as const : "Freebie Missing" as const,
-          description: r, timeDetected: now, priority: r.includes("Price") ? "High" as const : "Medium" as const, resolved: false,
-        }));
-        setAlerts(prev => [...newAlerts, ...prev]);
+  const { data: validationResults = [] } = useQuery({
+    queryKey: ["validation_results"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("validation_results").select("*").order("checked_at", { ascending: false });
+      if (error) throw error;
+      return data as DbValidationResult[];
+    },
+  });
+
+  const { data: logs = [] } = useQuery({
+    queryKey: ["validation_logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("validation_logs").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as DbValidationLog[];
+    },
+  });
+
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("alerts").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as DbAlert[];
+    },
+  });
+
+  const { data: settings = null } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("settings").select("*").limit(1).single();
+      if (error) throw error;
+      return data as DbSettings;
+    },
+  });
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["deals"] });
+    queryClient.invalidateQueries({ queryKey: ["validation_results"] });
+    queryClient.invalidateQueries({ queryKey: ["validation_logs"] });
+    queryClient.invalidateQueries({ queryKey: ["alerts"] });
+  };
+
+  const addDeal = useCallback(async (data: TablesInsert<"deals">) => {
+    const { data: deal, error } = await supabase.from("deals").insert(data).select().single();
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ["deals"] });
+    return deal as DbDeal;
+  }, [queryClient]);
+
+  const validateDeal = useCallback(async (dealId: string) => {
+    const deal = deals.find(d => d.id === dealId);
+    if (!deal) return;
+
+    const result = simulateValidation(deal);
+    const now = new Date().toISOString();
+
+    // Insert validation result
+    await supabase.from("validation_results").insert({ deal_id: dealId, ...result });
+
+    // Update deal status
+    await supabase.from("deals").update({ status: result.final_status, last_checked_at: now }).eq("id", dealId);
+
+    // Insert validation log
+    const reasons = (result.reason as string[]) || [];
+    await supabase.from("validation_logs").insert({
+      deal_id: dealId,
+      status: result.final_status,
+      message: reasons.length ? reasons.join(", ") : "All checks passed",
+      run_id: `RUN-${Date.now()}`,
+    });
+
+    // Create alerts if invalid
+    if (result.final_status === "invalid") {
+      const alertInserts = reasons.map((r) => ({
+        deal_id: dealId,
+        alert_type: r.includes("Price") ? "price_mismatch" as const : r.includes("Coupon") ? "coupon_failed" as const : "freebie_missing" as const,
+        description: r,
+        priority: r.includes("Price") ? "high" as const : "medium" as const,
+      }));
+      if (alertInserts.length > 0) {
+        await supabase.from("alerts").insert(alertInserts);
       }
-      return { ...d, status: result.finalResult as DealStatus, lastCheckedTime: now, validationResult: result };
-    }));
-  }, []);
+    }
 
-  const validateAllDeals = useCallback(() => {
-    deals.forEach(d => validateDeal(d.id));
+    invalidateAll();
+  }, [deals, queryClient]);
+
+  const validateAllDeals = useCallback(async () => {
+    for (const d of deals) {
+      await validateDeal(d.id);
+    }
   }, [deals, validateDeal]);
 
-  const toggleAlertResolved = useCallback((alertId: string) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, resolved: !a.resolved } : a));
-  }, []);
+  const toggleAlertResolved = useCallback(async (alertId: string, current: boolean) => {
+    await supabase.from("alerts").update({ is_resolved: !current }).eq("id", alertId);
+    queryClient.invalidateQueries({ queryKey: ["alerts"] });
+  }, [queryClient]);
+
+  const updateSettings = useCallback(async (patch: Partial<TablesInsert<"settings">>) => {
+    if (!settings) return;
+    await supabase.from("settings").update(patch).eq("id", settings.id);
+    queryClient.invalidateQueries({ queryKey: ["settings"] });
+  }, [settings, queryClient]);
 
   const getDeal = useCallback((id: string) => deals.find(d => d.id === id), [deals]);
+  const getLatestValidation = useCallback((dealId: string) => validationResults.find(v => v.deal_id === dealId), [validationResults]);
 
   return (
-    <DealContext.Provider value={{ deals, logs, alerts, settings, partnerSites: PARTNER_SITES, addDeal, validateDeal, validateAllDeals, toggleAlertResolved, updateSettings: setSettings, getDeal }}>
+    <DealContext.Provider value={{
+      deals, logs, alerts, settings, partnerSites: PARTNER_SITES,
+      isLoading: dealsLoading, addDeal, validateDeal, validateAllDeals,
+      toggleAlertResolved, updateSettings, getDeal, getLatestValidation, validationResults,
+    }}>
       {children}
     </DealContext.Provider>
   );
