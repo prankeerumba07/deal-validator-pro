@@ -164,7 +164,7 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    invalidateAll();
+    await invalidateAll();
   }, [deals, queryClient]);
 
   const validateAllDeals = useCallback(async () => {
