@@ -108,11 +108,13 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
   });
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["deals"] });
-    queryClient.invalidateQueries({ queryKey: ["validation_results"] });
-    queryClient.invalidateQueries({ queryKey: ["validation_logs"] });
-    queryClient.invalidateQueries({ queryKey: ["alerts"] });
+  const invalidateAll = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["deals"] }),
+      queryClient.invalidateQueries({ queryKey: ["validation_results"] }),
+      queryClient.invalidateQueries({ queryKey: ["validation_logs"] }),
+      queryClient.invalidateQueries({ queryKey: ["alerts"] }),
+    ]);
   };
 
   const addDeal = useCallback(async (data: TablesInsert<"deals">) => {
