@@ -1,16 +1,92 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDealContext } from "@/context/DealContext";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlusCircle, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  const { deals, partnerSites, validateAllDeals } = useDealContext();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [filterSite, setFilterSite] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const filtered = useMemo(() => deals.filter(d => {
+    if (filterSite !== "all" && d.partnerSite !== filterSite) return false;
+    if (filterStatus !== "all" && d.status !== filterStatus) return false;
+    if (search && !d.id.toLowerCase().includes(search.toLowerCase()) && !d.productUrl.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }), [deals, filterSite, filterStatus, search]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={validateAllDeals}><RefreshCw className="mr-2 h-4 w-4" />Validate All</Button>
+          <Button onClick={() => navigate("/add-deal")}><PlusCircle className="mr-2 h-4 w-4" />Add New Deal</Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Input placeholder="Search Deal ID or URL..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
+        <Select value={filterSite} onValueChange={setFilterSite}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Partner Site" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sites</SelectItem>
+            {partnerSites.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="Valid">Valid</SelectItem>
+            <SelectItem value="Invalid">Invalid</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Deal ID</TableHead>
+              <TableHead>Partner Site</TableHead>
+              <TableHead>Product URL</TableHead>
+              <TableHead className="text-right">Expected Price</TableHead>
+              <TableHead>Coupon</TableHead>
+              <TableHead className="text-right">Cashback %</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Checked</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No deals found</TableCell></TableRow>
+            ) : filtered.map(d => (
+              <TableRow key={d.id} className="cursor-pointer" onClick={() => navigate(`/deal/${d.id}`)}>
+                <TableCell className="font-medium">{d.id}</TableCell>
+                <TableCell>{d.partnerSite}</TableCell>
+                <TableCell><a href={d.productUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 hover:opacity-80" onClick={e => e.stopPropagation()}>{d.productUrl.slice(0, 35)}...</a></TableCell>
+                <TableCell className="text-right">₹{d.expectedPrice}</TableCell>
+                <TableCell>{d.couponCode || "—"}</TableCell>
+                <TableCell className="text-right">{d.cashbackPercent}%</TableCell>
+                <TableCell><StatusBadge status={d.status} /></TableCell>
+                <TableCell className="text-muted-foreground text-sm">{d.lastCheckedTime ? format(new Date(d.lastCheckedTime), "dd MMM, HH:mm") : "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
