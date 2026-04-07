@@ -108,11 +108,13 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
   });
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["deals"] });
-    queryClient.invalidateQueries({ queryKey: ["validation_results"] });
-    queryClient.invalidateQueries({ queryKey: ["validation_logs"] });
-    queryClient.invalidateQueries({ queryKey: ["alerts"] });
+  const invalidateAll = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["deals"] }),
+      queryClient.invalidateQueries({ queryKey: ["validation_results"] }),
+      queryClient.invalidateQueries({ queryKey: ["validation_logs"] }),
+      queryClient.invalidateQueries({ queryKey: ["alerts"] }),
+    ]);
   };
 
   const addDeal = useCallback(async (data: TablesInsert<"deals">) => {
@@ -123,8 +125,13 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [queryClient]);
 
   const validateDeal = useCallback(async (dealId: string) => {
-    const deal = deals.find(d => d.id === dealId);
-    if (!deal) return;
+    // Fetch deal directly from DB to avoid stale cache issues
+    let deal = deals.find(d => d.id === dealId);
+    if (!deal) {
+      const { data } = await supabase.from("deals").select("*").eq("id", dealId).single();
+      if (!data) return;
+      deal = data as DbDeal;
+    }
 
     const result = simulateValidation(deal);
     const now = new Date().toISOString();
@@ -157,7 +164,7 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    invalidateAll();
+    await invalidateAll();
   }, [deals, queryClient]);
 
   const validateAllDeals = useCallback(async () => {
