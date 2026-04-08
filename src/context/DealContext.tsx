@@ -188,10 +188,20 @@ export const DealProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getDeal = useCallback((id: string) => deals.find(d => d.id === id), [deals]);
   const getLatestValidation = useCallback((dealId: string) => validationResults.find(v => v.deal_id === dealId), [validationResults]);
 
+  const aiValidateDeal = useCallback(async (dealId: string, cashkaroUrl?: string, partnerUrl?: string) => {
+    const { data, error } = await supabase.functions.invoke("validate-deal", {
+      body: { dealId, cashkaroUrl, partnerUrl },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    await invalidateAll();
+    return data.result;
+  }, [queryClient]);
+
   return (
     <DealContext.Provider value={{
       deals, logs, alerts, settings, partnerSites: PARTNER_SITES,
-      isLoading: dealsLoading, addDeal, validateDeal, validateAllDeals,
+      isLoading: dealsLoading, addDeal, validateDeal, aiValidateDeal, validateAllDeals,
       toggleAlertResolved, updateSettings, getDeal, getLatestValidation, validationResults,
     }}>
       {children}
