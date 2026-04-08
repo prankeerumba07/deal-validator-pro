@@ -13,8 +13,9 @@ interface DealContextType {
   settings: DbSettings | null;
   partnerSites: string[];
   isLoading: boolean;
-  addDeal: (deal: TablesInsert<"deals">) => Promise<DbDeal>;
+  addDeal: (deal: TablesInsert<"deals"> & { cashkaro_url?: string | null }) => Promise<DbDeal>;
   validateDeal: (dealId: string) => Promise<void>;
+  aiValidateDeal: (dealId: string, cashkaroUrl?: string, partnerUrl?: string) => Promise<any>;
   validateAllDeals: () => Promise<void>;
   toggleAlertResolved: (alertId: string, current: boolean) => Promise<void>;
   updateSettings: (s: Partial<TablesInsert<"settings">>) => Promise<void>;
