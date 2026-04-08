@@ -11,6 +11,7 @@ import DealDetails from "./pages/DealDetails";
 import ValidationLogs from "./pages/ValidationLogs";
 import Alerts from "./pages/Alerts";
 import SettingsPage from "./pages/SettingsPage";
+import AutoValidate from "./pages/AutoValidate";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/logs" element={<ValidationLogs />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/auto-validate" element={<AutoValidate />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
