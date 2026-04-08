@@ -54,6 +54,7 @@ export type Database = {
       }
       deals: {
         Row: {
+          cashkaro_url: string | null
           coupon_code: string | null
           created_at: string
           deal_name: string
@@ -69,6 +70,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cashkaro_url?: string | null
           coupon_code?: string | null
           created_at?: string
           deal_name?: string
@@ -84,6 +86,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cashkaro_url?: string | null
           coupon_code?: string | null
           created_at?: string
           deal_name?: string
