@@ -33,6 +33,7 @@ const App = () => (
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/auto-validate" element={<AutoValidate />} />
+              <Route path="/partner-health" element={<PartnerHealth />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
