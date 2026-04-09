@@ -12,6 +12,7 @@ import ValidationLogs from "./pages/ValidationLogs";
 import Alerts from "./pages/Alerts";
 import SettingsPage from "./pages/SettingsPage";
 import AutoValidate from "./pages/AutoValidate";
+import PartnerHealth from "./pages/PartnerHealth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
