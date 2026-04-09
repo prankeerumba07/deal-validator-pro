@@ -1,4 +1,4 @@
-import { LayoutDashboard, PlusCircle, ScrollText, Bell, Settings, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, PlusCircle, ScrollText, Bell, Settings, BrainCircuit, Activity } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -10,6 +10,7 @@ const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "AI Validate", url: "/auto-validate", icon: BrainCircuit },
   { title: "Add Deal", url: "/add-deal", icon: PlusCircle },
+  { title: "Partner Health", url: "/partner-health", icon: Activity },
   { title: "Validation Logs", url: "/logs", icon: ScrollText },
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
