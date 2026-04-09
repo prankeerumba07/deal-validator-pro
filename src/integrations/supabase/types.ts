@@ -56,15 +56,21 @@ export type Database = {
         Row: {
           cashkaro_url: string | null
           coupon_code: string | null
+          coupon_discount: number | null
           created_at: string
           deal_name: string
+          effective_price_claimed: number | null
           expected_cashback: number
           expected_freebie: string | null
+          expected_payable: number | null
           expected_price: number
           expiry_date: string | null
           id: string
           last_checked_at: string | null
+          mrp: number | null
+          partner_sale_price: number | null
           partner_site: string
+          prepay_discount: number | null
           product_url: string
           status: string
           updated_at: string
@@ -72,15 +78,21 @@ export type Database = {
         Insert: {
           cashkaro_url?: string | null
           coupon_code?: string | null
+          coupon_discount?: number | null
           created_at?: string
           deal_name?: string
+          effective_price_claimed?: number | null
           expected_cashback?: number
           expected_freebie?: string | null
+          expected_payable?: number | null
           expected_price: number
           expiry_date?: string | null
           id?: string
           last_checked_at?: string | null
+          mrp?: number | null
+          partner_sale_price?: number | null
           partner_site: string
+          prepay_discount?: number | null
           product_url: string
           status?: string
           updated_at?: string
@@ -88,15 +100,21 @@ export type Database = {
         Update: {
           cashkaro_url?: string | null
           coupon_code?: string | null
+          coupon_discount?: number | null
           created_at?: string
           deal_name?: string
+          effective_price_claimed?: number | null
           expected_cashback?: number
           expected_freebie?: string | null
+          expected_payable?: number | null
           expected_price?: number
           expiry_date?: string | null
           id?: string
           last_checked_at?: string | null
+          mrp?: number | null
+          partner_sale_price?: number | null
           partner_site?: string
+          prepay_discount?: number | null
           product_url?: string
           status?: string
           updated_at?: string
@@ -173,39 +191,60 @@ export type Database = {
       }
       validation_results: {
         Row: {
+          actual_final: number | null
+          actual_post_coupon: number | null
           actual_price: number | null
+          ai_analysis: string | null
           checked_at: string
+          confidence_score: number | null
           coupon_status: string
           deal_id: string
+          error_type: string | null
           final_status: string
           freebie_status: string
           id: string
           reason: Json | null
           screenshot_url: string | null
+          severity: string | null
+          stage_results: Json | null
           stock_status: string
         }
         Insert: {
+          actual_final?: number | null
+          actual_post_coupon?: number | null
           actual_price?: number | null
+          ai_analysis?: string | null
           checked_at?: string
+          confidence_score?: number | null
           coupon_status?: string
           deal_id: string
+          error_type?: string | null
           final_status?: string
           freebie_status?: string
           id?: string
           reason?: Json | null
           screenshot_url?: string | null
+          severity?: string | null
+          stage_results?: Json | null
           stock_status?: string
         }
         Update: {
+          actual_final?: number | null
+          actual_post_coupon?: number | null
           actual_price?: number | null
+          ai_analysis?: string | null
           checked_at?: string
+          confidence_score?: number | null
           coupon_status?: string
           deal_id?: string
+          error_type?: string | null
           final_status?: string
           freebie_status?: string
           id?: string
           reason?: Json | null
           screenshot_url?: string | null
+          severity?: string | null
+          stage_results?: Json | null
           stock_status?: string
         }
         Relationships: [
